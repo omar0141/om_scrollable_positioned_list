@@ -281,24 +281,24 @@ class ScrollOffsetController {
       required Duration duration,
       Curve curve = Curves.linear}) async {
     final currentPosition =
-        scrollableListState!.primary.scrollController.offset;
+        this.scrollableListState!.primary.scrollController.offset;
     final newPosition = currentPosition + offset;
-    await scrollableListState!.primary.scrollController.animateTo(
-      newPosition,
-      duration: duration,
-      curve: curve,
-    );
+    await this.scrollableListState!.primary.scrollController.animateTo(
+          newPosition,
+          duration: duration,
+          curve: curve,
+        );
   }
 
   _ScrollablePositionedListState? scrollableListState;
 
   void _attach(_ScrollablePositionedListState scrollableListState) {
     assert(this.scrollableListState == null);
-    scrollableListState = scrollableListState;
+    this.scrollableListState = scrollableListState;
   }
 
   void _detach() {
-    scrollableListState = null;
+    this.scrollableListState = null;
   }
 }
 
@@ -326,8 +326,7 @@ class _ScrollablePositionedListState extends State<ScrollablePositionedList>
     super.initState();
     ItemPosition? initialPosition = PageStorage.of(context).readState(context);
     primary.target = initialPosition?.index ?? widget.initialScrollIndex;
-    primary.alignment =
-        initialPosition?.itemLeadingEdge ?? widget.initialAlignment;
+    primary.alignment = initialPosition?.itemLeadingEdge ?? 0;
     if (widget.itemCount > 0 && primary.target > widget.itemCount - 1) {
       primary.target = widget.itemCount - 1;
     }
@@ -344,6 +343,45 @@ class _ScrollablePositionedListState extends State<ScrollablePositionedList>
         widget.scrollOffsetNotifier?.changeController.add(offsetChange);
       }
     });
+
+    // Fix initial scroll position for items near the end
+    // if (primary.target > 0) {
+    SchedulerBinding.instance.addPostFrameCallback((_) async {
+      _adjustInitialScrollPosition();
+      final maxScrollExtent = primary.scrollController.position.maxScrollExtent;
+      primary.alignment = widget.initialAlignment;
+      await primary.scrollController.animateTo(
+        maxScrollExtent,
+        duration: Duration(milliseconds: 100),
+        curve: Curves.easeInOut,
+      );
+    });
+    // }
+  }
+
+  void _adjustInitialScrollPosition() {
+    if (!primary.scrollController.hasClients) return;
+
+    final itemPosition = primary.itemPositionsNotifier.itemPositions.value
+        .firstWhereOrNull((ItemPosition itemPosition) =>
+            itemPosition.index == primary.target);
+
+    if (itemPosition != null) {
+      final targetScrollOffset = itemPosition.itemLeadingEdge *
+          primary.scrollController.position.viewportDimension;
+      final adjustedOffset = targetScrollOffset -
+          primary.alignment *
+              primary.scrollController.position.viewportDimension;
+
+      // Clamp offset to valid range
+      final maxScrollExtent = primary.scrollController.position.maxScrollExtent;
+      final clampedOffset = adjustedOffset.clamp(0.0, maxScrollExtent);
+
+      // Only adjust if there's a significant difference
+      if ((primary.scrollController.offset - clampedOffset).abs() > 1.0) {
+        primary.scrollController.jumpTo(clampedOffset);
+      }
+    }
   }
 
   @override

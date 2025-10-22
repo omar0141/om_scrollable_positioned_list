@@ -138,10 +138,12 @@ class _ScrollablePositionedListPageState
         itemScrollController: itemScrollController,
         itemPositionsListener: itemPositionsListener,
         scrollOffsetController: scrollOffsetController,
+        initialScrollIndex: numberOfItems,
         reverse: reversed,
-        scrollDirection: orientation == Orientation.portrait
+        initialAlignment: 1,
+        scrollDirection: orientation == Orientation.landscape
             ? Axis.vertical
-            : Axis.horizontal,
+            : Axis.vertical,
       );
 
   Widget get positionsView => ValueListenableBuilder<Iterable<ItemPosition>>(

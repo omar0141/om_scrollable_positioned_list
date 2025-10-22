@@ -34,7 +34,7 @@
     },
     {
       "name": "om_scrollable_positioned_list",
-      "version": "1.0.0",
+      "version": "0.3.8+4",
       "dependencies": [
         "collection",
         "flutter"

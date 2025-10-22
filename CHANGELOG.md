@@ -1,3 +1,6 @@
+# 0.3.8+3
+* solved the scrollbar issue when initialScrollIndex is set to the last index or any index that positions the content away from the top.
+
 # 0.3.8+1
 * Migrate tests off deprecated APIs.
 * Bump min Flutter version to 3.1.0.
