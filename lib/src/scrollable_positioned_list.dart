@@ -345,18 +345,19 @@ class _ScrollablePositionedListState extends State<ScrollablePositionedList>
     });
 
     // Fix initial scroll position for items near the end
-    // if (primary.target > 0) {
-    SchedulerBinding.instance.addPostFrameCallback((_) async {
-      _adjustInitialScrollPosition();
-      final maxScrollExtent = primary.scrollController.position.maxScrollExtent;
-      primary.alignment = widget.initialAlignment;
-      await primary.scrollController.animateTo(
-        maxScrollExtent,
-        duration: Duration(milliseconds: 100),
-        curve: Curves.easeInOut,
-      );
-    });
-    // }
+    if (!widget.reverse) {
+      SchedulerBinding.instance.addPostFrameCallback((_) async {
+        _adjustInitialScrollPosition();
+        final maxScrollExtent =
+            primary.scrollController.position.maxScrollExtent;
+        primary.alignment = widget.initialAlignment;
+        await primary.scrollController.animateTo(
+          maxScrollExtent,
+          duration: Duration(milliseconds: 100),
+          curve: Curves.easeInOut,
+        );
+      });
+    }
   }
 
   void _adjustInitialScrollPosition() {
