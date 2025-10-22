@@ -8,7 +8,7 @@ import 'package:flutter/scheduler.dart';
 import 'package:flutter/widgets.dart';
 
 import 'element_registry.dart';
-import 'item_positions_listener.dart';
+import 'om_item_positions_listener.dart';
 import 'item_positions_notifier.dart';
 import 'scroll_view.dart';
 import 'wrapping.dart';

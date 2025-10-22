@@ -2,6 +2,6 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-export 'src/item_positions_listener.dart';
+export 'src/om_item_positions_listener.dart';
 export 'src/om_scrollable_positioned_list.dart';
-export 'src/scroll_offset_listener.dart';
+export 'src/om_scroll_offset_listener.dart';

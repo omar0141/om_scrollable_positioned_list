@@ -4,7 +4,7 @@
 
 import 'package:flutter/foundation.dart';
 
-import 'item_positions_listener.dart';
+import 'om_item_positions_listener.dart';
 
 /// Internal implementation of [ItemPositionsListener].
 class ItemPositionsNotifier implements ItemPositionsListener {
