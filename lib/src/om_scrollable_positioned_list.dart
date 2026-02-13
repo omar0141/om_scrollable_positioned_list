@@ -325,7 +325,8 @@ class _ScrollablePositionedListState extends State<ScrollablePositionedList>
     super.initState();
     ItemPosition? initialPosition = PageStorage.of(context).readState(context);
     primary.target = initialPosition?.index ?? widget.initialScrollIndex;
-    primary.alignment = initialPosition?.itemLeadingEdge ?? 0;
+    primary.alignment =
+        initialPosition?.itemLeadingEdge ?? widget.initialAlignment;
     if (widget.itemCount > 0 && primary.target > widget.itemCount - 1) {
       primary.target = widget.itemCount - 1;
     }
@@ -337,24 +338,17 @@ class _ScrollablePositionedListState extends State<ScrollablePositionedList>
       final currentOffset = primary.scrollController.offset;
       final offsetChange = currentOffset - previousOffset;
       previousOffset = currentOffset;
-      if (!_isTransitioning |
+      if (!_isTransitioning ||
           (widget.scrollOffsetNotifier?.recordProgrammaticScrolls ?? false)) {
         widget.scrollOffsetNotifier?.changeController.add(offsetChange);
       }
     });
 
-    // Fix initial scroll position for items near the end
-    if (!widget.reverse) {
+    // Fix initial scroll position for items near the end.
+    // This is only needed for non-reversed lists and when not starting at the very beginning.
+    if (!widget.reverse && widget.initialScrollIndex > 0) {
       SchedulerBinding.instance.addPostFrameCallback((_) async {
         _adjustInitialScrollPosition();
-        final maxScrollExtent =
-            primary.scrollController.position.maxScrollExtent;
-        primary.alignment = widget.initialAlignment;
-        await primary.scrollController.animateTo(
-          maxScrollExtent,
-          duration: Duration(milliseconds: 100),
-          curve: Curves.easeInOut,
-        );
       });
     }
   }
@@ -373,11 +367,11 @@ class _ScrollablePositionedListState extends State<ScrollablePositionedList>
           primary.alignment *
               primary.scrollController.position.viewportDimension;
 
-      // Clamp offset to valid range
       final maxScrollExtent = primary.scrollController.position.maxScrollExtent;
-      final clampedOffset = adjustedOffset.clamp(0.0, maxScrollExtent);
+      final minScrollExtent = primary.scrollController.position.minScrollExtent;
+      final clampedOffset = (primary.scrollController.offset + adjustedOffset)
+          .clamp(minScrollExtent, maxScrollExtent);
 
-      // Only adjust if there's a significant difference
       if ((primary.scrollController.offset - clampedOffset).abs() > 1.0) {
         primary.scrollController.jumpTo(clampedOffset);
       }
@@ -575,10 +569,19 @@ class _ScrollablePositionedListState extends State<ScrollablePositionedList>
     Curve curve = Curves.linear,
     required List<double> opacityAnimationWeights,
   }) async {
-    final direction = index > primary.target ? 1 : -1;
-    final itemPosition = primary.itemPositionsNotifier.itemPositions.value
-        .firstWhereOrNull(
-            (ItemPosition itemPosition) => itemPosition.index == index);
+    final itemPositions = primary.itemPositionsNotifier.itemPositions.value;
+    final int direction;
+    if (itemPositions.isEmpty) {
+      direction = index > primary.target ? 1 : -1;
+    } else {
+      final meanIndex = itemPositions
+              .map((it) => it.index)
+              .reduce((value, element) => value + element) /
+          itemPositions.length;
+      direction = index > meanIndex ? 1 : -1;
+    }
+    final itemPosition = itemPositions.firstWhereOrNull(
+        (ItemPosition itemPosition) => itemPosition.index == index);
     if (itemPosition != null) {
       // Scroll directly.
       final localScrollAmount = itemPosition.itemLeadingEdge *
@@ -604,9 +607,7 @@ class _ScrollablePositionedListState extends State<ScrollablePositionedList>
               .animate(_animationController);
           secondary.scrollController.jumpTo(-direction *
               (_screenScrollCount *
-                      primary.scrollController.position.viewportDimension -
-                  alignment *
-                      secondary.scrollController.position.viewportDimension));
+                  primary.scrollController.position.viewportDimension));
 
           startCompleter.complete(primary.scrollController.animateTo(
               primary.scrollController.offset + direction * scrollAmount,
